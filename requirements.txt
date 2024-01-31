@@ -1,8 +1,7 @@
-flask
-pathlib
-python-dotenv
-PyJWT
-Flask-SQLAlchemy
-Flask-Migrate
-flask-bcrypt
-mysqlclient
+fastapi
+uvicorn
+sqlalchemy
+passlib
+bcrypt
+python-jose
+python-multipart

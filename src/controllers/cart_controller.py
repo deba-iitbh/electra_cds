@@ -1,15 +1,21 @@
-from flask import request, Response, json, Blueprint
-from flask_jwt_extended import jwt_required
-from src.models.cart_model import CartItem
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from src.schemas.userSchema import UserRole
 from src.services.cartService import CartManagementActuator
+from src.constants import get_db, get_current_user
+from src.schemas.cartSchema import Cart
+from src.schemas.tokenSchema import TokenData
 
-# user controller blueprint to be registered with api blueprint
-cart = Blueprint("cart", __name__)
+cart = APIRouter(tags=["Cart"])
 
 
-@cart.route("/", methods=["POST"])
-@jwt_required()
-def add_to_cart():
+@cart.post("/", status_code=status.HTTP_201_CREATED)
+async def add_to_cart(
+    data: Cart,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user),
+):
     """
     Add an item to the user's cart.
 
@@ -19,87 +25,63 @@ def add_to_cart():
     - quantity: int
 
     Returns:
-    - Success: 200 OK
+    - Success: 201 OK
     - Failure: 400 Bad Request
     """
-    data = request.get_json()
-    try:
-        user_id = data["user_id"]
-        product_id = data["product_id"]
-        quantity = data["quantity"]
-    except KeyError:
-        return Response(
-            response=json.dumps({"status": "failed", "msg": "Missing required fields"}),
-            status=400,
-            mimetype="application/json",
+    if current_user.role != UserRole.CUSTOMER:
+        return HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to perform this action",
         )
-
     cart_management_actuator = CartManagementActuator()
-    if cart_management_actuator.add_to_cart(user_id, product_id, quantity):
-        return Response(
-            response=json.dumps(
-                {"status": "success", "msg": "Item added to the cart successfully"}
-            ),
-            status=200,
-            mimetype="application/json",
-        )
+    if cart_management_actuator.add_to_cart(data, db):
+        return {"status": "success", "msg": "Item added to the cart successfully"}
     else:
-        return Response(
-            response=json.dumps(
-                {"status": "failed", "msg": "Failed to add item to the cart"}
-            ),
-            status=400,
-            mimetype="application/json",
+        return HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail="Failed to add item to the cart",
         )
 
 
-@cart.route("/", methods=["DELETE"])
-@jwt_required()
-def remove_from_cart():
+@cart.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_from_cart(
+    data: Cart,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user),
+):
     """
     Remove an item from the user's cart.
 
     Parameters:
     - user_id: int
     - product_id: int
+    - quantity: int
 
     Returns:
-    - Success: 200 OK
+    - Success: 204 Success
     - Failure: 400 Bad Request
     """
-    data = request.get_json()
-    try:
-        user_id = data["user_id"]
-        product_id = data["product_id"]
-    except KeyError:
-        return Response(
-            response=json.dumps({"status": "failed", "msg": "Missing required fields"}),
-            status=400,
-            mimetype="application/json",
+    if current_user.role != UserRole.CUSTOMER:
+        return HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to perform this action",
         )
-
     cart_management_actuator = CartManagementActuator()
-    if cart_management_actuator.remove_from_cart(user_id, product_id):
-        return Response(
-            response=json.dumps(
-                {"status": "success", "msg": "Item removed from the cart successfully"}
-            ),
-            status=200,
-            mimetype="application/json",
-        )
+    if cart_management_actuator.remove_from_cart(data, db):
+        return {"status": "success", "msg": "Item removed from the cart successfully"}
     else:
-        return Response(
-            response=json.dumps(
-                {"status": "failed", "msg": "Failed to remove item from the cart"}
-            ),
-            status=400,
-            mimetype="application/json",
+        HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Failed to remove item {data.product_id} from cart",
         )
 
 
-@cart.route("/", methods=["GET"])
-@jwt_required()
-def get_cart_contents():
+@cart.get("/{user_id}", status_code=status.HTTP_200_OK, response_model=list[Cart])
+async def get_cart_contents(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user),
+):
     """
     Fetch and return the contents of the user's cart.
 
@@ -110,27 +92,11 @@ def get_cart_contents():
     - Success: 200 OK with list of cart items
     - Failure: 400 Bad Request
     """
-    user_id = request.args.get("user_id")
-
-    if not user_id:
-        return Response(
-            response=json.dumps(
-                {"status": "success", "msg": "Missing user_id parameter"}
-            ),
-            status=400,
-            mimetype="application/json",
+    if current_user.role != UserRole.CUSTOMER:
+        return HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to perform this action",
         )
-
     # Fetch cart items for the specified user
-    cart_items = CartItem.query.filter_by(user_id=user_id).all()
-
-    cart_contents = [
-        {"id": item.id, "product_id": item.product_id, "quantity": item.quantity}
-        for item in cart_items
-    ]
-
-    return Response(
-        json.dumps({"status": "success", "items": cart_contents}),
-        status=200,
-        mimetype="application/json",
-    )
+    cart_management_actuator = CartManagementActuator()
+    return cart_management_actuator.get_all_contents(user_id, db)

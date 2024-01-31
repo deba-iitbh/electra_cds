@@ -1,4 +1,11 @@
-from src import config, app
+import uvicorn
+from src import config
 
 if __name__ == "__main__":
-    app.run(host=config.HOST, port=config.PORT, debug=config.DEBUG)
+    uvicorn.run(
+        "src:app",
+        reload=True,
+        host=config.HOST,
+        port=config.PORT,
+        log_level="info",
+    )

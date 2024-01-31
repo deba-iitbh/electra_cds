@@ -1,8 +1,9 @@
-from enum import Enum
-from src.constants import db
+from enum import Enum as enum
+from sqlalchemy import Column, Integer, String, Float, Enum
+from src.constants import Base
 
 
-class category(Enum):
+class category(enum):
     food = 1
     clothing = 2
     electronics = 3
@@ -14,12 +15,12 @@ class category(Enum):
     other = 9
 
 
-class Product(db.Model):
+class Product(Base):
     __tablename__ = "product"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(255), nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    stock_quantity = db.Column(db.Integer, nullable=False)
-    category = db.Column(db.Enum(category), nullable=False)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(255), nullable=False)
+    price = Column(Float, nullable=False)
+    stock_quantity = Column(Integer, nullable=False)
+    category = Column(Enum(category), nullable=False)

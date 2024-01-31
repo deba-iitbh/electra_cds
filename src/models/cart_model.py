@@ -1,10 +1,11 @@
-from src.constants import db
+from sqlalchemy import Column, Integer, ForeignKey
+from src.constants import Base
 
 
-class CartItem(db.Model):
+class CartItem(Base):
     __tablename__ = "cart"
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False)
-    quantity = db.Column(db.Integer, nullable=False)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("product.id"), nullable=False)
+    quantity = Column(Integer, nullable=False)
