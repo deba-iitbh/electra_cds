@@ -1,29 +1,19 @@
-from flask import request, Response, json, Blueprint
-from flask_jwt_extended import (
-    jwt_required,
-    current_user,
-    set_access_cookies,
-    create_access_token,
-    unset_jwt_cookies,
-)
-from src.models.user_model import User, UserRole
-from src.services.userService import (
-    UserRegistrationActuator,
-    UserAuthenticationActuator,
-)
-from src.constants import jwt
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 
-users = Blueprint("user", __name__)
+from src.schemas.tokenSchema import TokenData
+from src.constants import get_db, get_current_user
+from src.schemas.userSchema import UserCreate, UserLogin, UserShow, UserRole
+from src.services.userService import UserManagementActuator
+from src.services.jwtService import jwtActuator
 
 
-@jwt.user_lookup_loader
-def user_lookup_callback(_, jwt_data):
-    identity = jwt_data["sub"]
-    return User.query.filter_by(id=identity).one_or_none()
+users = APIRouter(tags=["Users"])
 
 
-@users.route("/register", methods=["POST"])
-def handle_register():
+@users.post("/register", status_code=status.HTTP_201_CREATED)
+def handle_register(data: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user.
 
@@ -35,49 +25,23 @@ def handle_register():
     - role: str (Enum: CUSTOMER, VENDOR, ADMIN)
 
     Returns:
-    - Success: 200 OK
+    - Success: 201 OK
     - Failure: 400 Bad Request
     """
-    data = request.get_json()
-    try:
-        username = data["username"]
-        password = data["password"]
-        email = data["email"]
-        address = data["address"]
-        role = UserRole(data["role"])
-    except KeyError:
-        return Response(
-            response=json.dumps(
-                {
-                    "status": "failed",
-                    "message": "Missing required fields",
-                }
-            ),
-            status=400,
-            mimetype="application/json",
-        )
-
-    registration_actuator = UserRegistrationActuator()
-    if registration_actuator.register_user(username, password, email, address, role):
-        return Response(
-            response=json.dumps(
-                {"status": "success", "msg": "User registered successfully"}
-            ),
-            status=200,
-            mimetype="application/json",
-        )
+    registration_actuator = UserManagementActuator()
+    if registration_actuator.create_user(data, db):
+        return {"status": "success", "msg": "User registered successfully"}
     else:
-        return Response(
-            response=json.dumps(
-                {"status": "failed", "msg": "Error in user registration"}
-            ),
-            status=400,
-            mimetype="application/json",
+        return HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail="Failed to register user",
         )
 
 
-@users.route("/login", methods=["POST"])
-def handle_login():
+@users.post("/login", status_code=status.HTTP_200_OK)
+def handle_login(
+    request: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+):
     """
     Authenticate the user and generate a JWT token.
 
@@ -89,59 +53,43 @@ def handle_login():
     - Success: 200 OK with JWT token in cookie
     - Failure: 401 Unauthorized
     """
-    data = request.get_json()
-    try:
-        username = data["username"]
-        password = data["password"]
-    except KeyError:
-        return Response(
-            response=json.dumps(
-                {"status": "success", "msg": "Missing required fields"}
-            ),
-            status=400,
-            mimetype="application/json",
-        )
 
-    authentication_actuator = UserAuthenticationActuator()
-    user = authentication_actuator.authenticate_user(username, password)
+    authentication_actuator = UserManagementActuator()
+    data = UserLogin(username=request.username, password=request.password)
+    user = authentication_actuator.authenticate_user(data, db)
+    jwtAuth = jwtActuator()
 
     if user:
-        access_token = create_access_token(identity=user.id)
-        response = Response(
-            response=json.dumps({"msg": "Login successful"}),
-            status=200,
-            mimetype="application/json",
+        access_token = jwtAuth.create_access_token(
+            data={"username": user.username, "role": user.role}
         )
-        set_access_cookies(response, access_token)
-        return response
+        return {"access_token": access_token, "token_type": "bearer"}
     else:
-        return Response(
-            response=json.dumps({"status": "failed", "msg": "Authentication failed"}),
-            status=401,
-            mimetype="application/json",
+        return HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed",
         )
 
 
-@users.route("/logout", methods=["POST"])
-def handle_logout():
+@users.post("/logout/{user_id}")
+def handle_logout(
+    user_id: int,
+    current_user: TokenData = Depends(get_current_user),
+):
     """
-    Logsout the user and clears the Cookie
+    Logs out the user and clears the Cookie
 
     Returns:
     - Success: 200 OK
     """
-    response = Response(
-        response=json.dumps({"status": "success", "msg": "Logout successful"}),
-        status=200,
-        mimetype="application/json",
-    )
-    unset_jwt_cookies(response)
-    return response
+    return {"status": "success", "msg": "Logout successful"}
 
 
-@users.route("/all", methods=["GET"])
-@jwt_required()
-def get_users():
+@users.get("/all", status_code=status.HTTP_200_OK)
+def get_users(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user),
+):
     """
     Get the list of users in the system.
 
@@ -150,31 +98,16 @@ def get_users():
         - Failure: 403 Unauthorized
     """
     if current_user.role != UserRole.ADMIN:
-        return Response(
-            json.dumps(
-                {
-                    "status": "failed",
-                    "msg": "Access denied. You must be an ADMIN to access this resource.",
-                }
-            ),
-            status=403,
-            mimetype="application/json",
+        return HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You are not authorized to perform this action",
         )
 
-    users = User.query.all()
-
-    users_data = [
-        {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "role": user.role.value,
-        }
-        for user in users
-    ]
-
-    return Response(
-        response=json.dumps({"users": users_data}),
-        status=200,
-        mimetype="application/json",
-    )
+    try:
+        userActuator = UserManagementActuator()
+        return userActuator.get_all_users(db)
+    except Exception as e:
+        return HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
