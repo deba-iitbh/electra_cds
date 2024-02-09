@@ -1,169 +1,141 @@
-import React, { useState } from "react";
-import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
-import { Form, FormikProvider, useFormik } from "formik";
-import * as Yup from "yup";
-
-import {
-  Box,
-  Checkbox,
-  FormControlLabel,
-  IconButton,
-  InputAdornment,
-  Link,
-  Stack,
-  TextField,
-} from "@mui/material";
-import { LoadingButton } from "@mui/lab";
-import { Icon } from "@iconify/react";
+import * as React from 'react';
+import Button from '@mui/material/Button';
+import CssBaseline from '@mui/material/CssBaseline';
+import TextField from '@mui/material/TextField';
+import Link from '@mui/material/Link';
+import Grid from '@mui/material/Grid';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Container from '@mui/material/Container';
+import styled from '@emotion/styled';
 import { motion } from "framer-motion";
+import { useRef } from 'react';  // Import useRef
 
-let easing = [0.6, -0.05, 0.01, 0.99];
-const animate = {
-  opacity: 1,
-  y: 0,
-  transition: {
-    duration: 0.6,
-    ease: easing,
-    delay: 0.16,
+
+export default function SignUp() {
+  const formRef = useRef(0);  // Create a ref for the form
+  const usernameRef = useRef('') 
+  const passwordRef = useRef('') 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/v1/users/login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Accept": "application/json",
+        },
+        
+        body: JSON.stringify({
+          username: String(usernameRef.current.value),
+          password: String(passwordRef.current.value),
+        }),
+      });
+  
+      const result = await response.json();
+      console.log(response)
+      if (response.ok) {
+        console.log("Login successful!");
+        usernameRef.current.value = '';
+        passwordRef.current.value = '';
+        // Optionally, you can redirect the user or perform other actions on success
+      } else {
+        console.log("Login failed:", result.message);
+        // Handle sign-up failure (e.g., show an error message)
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
+      // Handle other errors (e.g., network issues)
+    }
+  };
+  
+
+  const CustomContainer = styled(Container)({
+    backgroundColor: '#CDAFE4',
+    height : '600',
+    width : '400',
+    display: 'flex',
+
+  })
+
+  let easing = [0.6, -0.05, 0.01, 0.99];
+const fadeInUp = {
+  initial: {
+    y: 60,
+    opacity: 0,
+    transition: { duration: 0.6, ease: easing },
+  },
+  animate: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.6,
+      ease: easing,
+    },
   },
 };
+  
 
-const LoginForm = ({ setAuth }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
-
-  const [showPassword, setShowPassword] = useState(false);
-
-  const LoginSchema = Yup.object().shape({
-    email: Yup.string()
-      .email("Provide a valid email address")
-      .required("Email is required"),
-    password: Yup.string().required("Password is required"),
-  });
-
-  const formik = useFormik({
-    initialValues: {
-      email: "",
-      password: "",
-      remember: true,
-    },
-    validationSchema: LoginSchema,
-    onSubmit: () => {
-      console.log("submitting...");
-      setTimeout(() => {
-        console.log("submited!!");
-        setAuth(true);
-        navigate(from, { replace: true });
-      }, 2000);
-    },
-  });
-
-  const { errors, touched, values, isSubmitting, handleSubmit, getFieldProps } =
-    formik;
 
   return (
-    <FormikProvider value={formik}>
-      <Form autoComplete="off" noValidate onSubmit={handleSubmit}>
-        <Box
-          component={motion.div}
-          animate={{
-            transition: {
-              staggerChildren: 0.55,
-            },
+    <CustomContainer maxWidth="xl">
+      <Container component="main" maxWidth="xs" >
+        <CssBaseline />
+        <form ref={formRef}
+          component={motion.div} {...fadeInUp}
+          sx={{
+            marginTop: 15,
+            height: "80vh",
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            placeItems: "center",
+
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 3,
-            }}
-            component={motion.div}
-            initial={{ opacity: 0, y: 40 }}
-            animate={animate}
-          >
-            <TextField
-              fullWidth
-              autoComplete="username"
-              type="email"
-              label="Email Address"
-              {...getFieldProps("email")}
-              error={Boolean(touched.email && errors.email)}
-              helperText={touched.email && errors.email}
-            />
 
-            <TextField
-              fullWidth
-              autoComplete="current-password"
-              type={showPassword ? "text" : "password"}
-              label="Password"
-              {...getFieldProps("password")}
-              error={Boolean(touched.password && errors.password)}
-              helperText={touched.password && errors.password}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword((prev) => !prev)}
-                    >
-                      {showPassword ? (
-                        <Icon icon="eva:eye-fill" />
-                      ) : (
-                        <Icon icon="eva:eye-off-fill" />
-                      )}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Box>
-
-          <Box
-            component={motion.div}
-            initial={{ opacity: 0, y: 20 }}
-            animate={animate}
-          >
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              sx={{ my: 2 }}
-            >
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    {...getFieldProps("remember")}
-                    checked={values.remember}
-                  />
-                }
-                label="Remember me"
-              />
-
-              <Link  sx={{color:"#7F4988"}}
-                component={RouterLink}
-                variant="subtitle2"
-                to="#"
-                underline="hover"
-              >
-                Forgot password?
-              </Link>
-            </Stack>
-
-            <LoadingButton  sx={{bgcolor:"#7F4988"}}
-              fullWidth
-              size="large"
+          <Box component="form" noValidate onSubmit={handleSubmit}   sx={{ mt: 3, width:400} }>
+            <Grid container spacing={2}>
+              <Grid item xs={12} component={motion.div} {...fadeInUp}>
+                <TextField
+                  sx={{ backgroundColor:'#CDAFE4'}}
+                  required
+                  fullWidth
+                  id="username"
+                  label="Username"
+                  name="username"
+                  autoComplete="username"
+                  inputRef={usernameRef}
+                />
+              </Grid>
+              <Grid item xs={12} component={motion.div} {...fadeInUp}>
+                <TextField
+                 sx={{ backgroundColor:'#CDAFE4'}}
+                 required
+                 fullWidth
+                 id="password"
+                 label="Password"
+                 name="password"
+                 type="password"
+                 autoComplete="password"
+                 inputRef={passwordRef}
+                />
+              </Grid>
+            </Grid>
+            <Button
               type="submit"
+              fullWidth
               variant="contained"
-              loading={isSubmitting}
+              component={motion.div} {...fadeInUp}
+              sx={{ mt: 3, mb: 2, backgroundColor:'#7F4988'}}
+              onClick={handleSubmit}  
             >
-              {isSubmitting ? "loading..." : "Login"}
-            </LoadingButton>
+              Login
+            </Button>
           </Box>
-        </Box>
-      </Form>
-    </FormikProvider>
+        </form>
+      </Container>
+    </CustomContainer>
   );
-};
-
-export default LoginForm;
+}

@@ -13,6 +13,10 @@ import { useState } from "react";
 import { CssBaseline } from "@mui/material";
 import {Navigate, useLocation } from "react-router-dom";
 import useNavigation from 'react-router-dom';
+import Products from './components/Products';
+import AddProduct from './components/AddProduct';
+import DeleteProduct from './components/DeleteProduct';
+import ModifyProduct from './components/ModifyProduct';
 
 
 
@@ -26,8 +30,12 @@ function App() {
           <Route index element={<Home />} />
           <Route path='/Home' element={<Home />} />
           <Route path='/services' element={<Services />} />
+          <Route path='/products' element={<Products />} />
           <Route path='/signup' element={<SignUp />} />
           <Route path="/login" element={<Login />} />          
+          <Route path="/addproduct" element={<AddProduct />} />          
+          <Route path="/deleteproduct" element={<DeleteProduct />} />          
+          <Route path="/modifyproduct" element={<ModifyProduct />} />          
         </Routes>
       </BrowserRouter>
       <Footer />
