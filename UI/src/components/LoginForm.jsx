@@ -19,6 +19,16 @@ export default function SignUp() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
+      console.log(
+JSON.stringify({
+                username: String(usernameRef.current.value),
+                password: String(passwordRef.current.value),
+                grant_type: "",
+                scope: "",
+                client_id: "",
+                client_secret: "",
+        })
+                        )
       const response = await fetch("http://127.0.0.1:5000/api/v1/users/login",
       {
         method: "POST",
@@ -26,10 +36,10 @@ export default function SignUp() {
           "Content-Type": "application/x-www-form-urlencoded",
           "Accept": "application/json",
         },
-        
-        body: JSON.stringify({
-          username: String(usernameRef.current.value),
-          password: String(passwordRef.current.value),
+        body: new URLSearchParams({
+                "username": String(usernameRef.current.value),
+                "password": String(passwordRef.current.value),
+                "grant_type": "password",
         }),
       });
   
