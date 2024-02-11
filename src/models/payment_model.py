@@ -23,4 +23,4 @@ class Payment(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     modified_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    payment_details = relationship("Order", back_populates="payment")
+    # payment_details = relationship("Order", back_populates="payment")
