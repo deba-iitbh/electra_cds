@@ -49,7 +49,7 @@ def handle_payment_create(
         )
 
 
-@payment.get("/{pid}")
+@payment.get("/{pid}", response_model=PaymentShow)
 def get_payment(
     pid: int,
     db: Session = Depends(get_db),

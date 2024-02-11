@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 
-from src.schemas.orderSchema import OrderDetails,OrderDetailsShow,OrderItems,OrderItemsShow
+from src.schemas.orderSchema import (
+    OrderDetails,
+    OrderDetailsShow,
+    OrderItems,
+    OrderItemsShow,
+)
 from src.services.orderService import OrderServiceActuator
 from src.schemas.userSchema import UserRole
 from src.schemas.tokenSchema import TokenData
@@ -48,6 +53,8 @@ def handle_order_items_create(
             status_code=status.HTTP_417_EXPECTATION_FAILED,
             detail="Failed to add new ordered items",
         )
+
+
 @order.post("/", status_code=status.HTTP_201_CREATED)
 def handle_order_details_create(
     data: OrderDetails,
@@ -85,6 +92,8 @@ def handle_order_details_create(
             status_code=status.HTTP_417_EXPECTATION_FAILED,
             detail="Failed to add new order details",
         )
+
+
 @order.get("/{uid}")
 def get_user_order(
     uid: int,
@@ -112,6 +121,7 @@ def get_user_order(
         return HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
+
 
 @order.get("/{oid}")
 def get_order(
