@@ -51,7 +51,7 @@ const Login = ({ setAuth }) => {
       <Container maxWidth="sm" >
         <ContentStyle>
           <HeadingStyle component={motion.div} {...fadeInUp}>
-            <Typography variant="h5" fontWeight={700} component={'p'} sx={{ color: "text.secondary", mb: 5}}>
+            <Typography variant="h4" fontWeight={700} component={'p'} sx={{ color: "text.secondary", mb: 5, ml: 8}}>
               Login to your account
             </Typography>
           </HeadingStyle>

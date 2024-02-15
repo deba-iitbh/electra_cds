@@ -9,17 +9,51 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import styled from '@emotion/styled';
 import { motion } from "framer-motion";
+import { useRef } from 'react';  // Import useRef
 
 
 export default function SignUp() {
-  const handleSubmit = (event) => {
+  const formRef = useRef(0);  // Create a ref for the form
+  const usernameRef = useRef('') 
+  const emailRef = useRef('') 
+  const passwordRef = useRef('') 
+  const addressRef = useRef('') 
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
-  }
+  
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/v1/users/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: usernameRef.current.value,
+          password: passwordRef.current.value,
+          email: emailRef.current.value,
+          address: addressRef.current.value,
+          role: "CUSTOMER",
+        }),
+      });
+  
+      const result = await response.json();
+      if (response.ok) {
+        console.log("Sign-up successful!");
+        usernameRef.current.value = '';
+        passwordRef.current.value = '';
+        emailRef.current.value = '';
+        addressRef.current.value = '';
+        // Optionally, you can redirect the user or perform other actions on success
+      } else {
+        console.log("Sign-up failed:", result.message);
+        // Handle sign-up failure (e.g., show an error message)
+      }
+    } catch (error) {
+      console.error("Error during sign-up:", error);
+      // Handle other errors (e.g., network issues)
+    }
+  };
+  
 
   const CustomContainer = styled(Container)({
     backgroundColor: '#CDAFE4',
@@ -52,7 +86,7 @@ const fadeInUp = {
     <CustomContainer maxWidth="xl">
       <Container component="main" maxWidth="xs" >
         <CssBaseline />
-        <Box 
+        <form ref={formRef}
           component={motion.div} {...fadeInUp}
           sx={{
             marginTop: 15,
@@ -64,21 +98,24 @@ const fadeInUp = {
 
           }}
         >
-          <Typography component="h1" variant="h4" sx={{ color: "#7F4988", mb: 5}}>
+          <Container>
+          <Typography component="h1" variant="h3" sx={{ color: "#7F4988", mb: 5, mt:7}}>
             Sign up
           </Typography>
+          </Container>
           <Box component="form" noValidate onSubmit={handleSubmit}   sx={{ mt: 3, width:400} }>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} component={motion.div} {...fadeInUp}>
                 <TextField 
                   sx={{ backgroundColor:'#CDAFE4'}}
-                  autoComplete="given-name"
-                  name="firstName"
+                  autoComplete="name"
+                  name="username"
                   required
                   fullWidth
-                  id="firstName"
-                  label="First Name"
+                  id="username"
+                  label="username"
                   autoFocus
+                  inputRef={usernameRef}
                 />
               </Grid>
               <Grid item xs={12} sm={6} component={motion.div} {...fadeInUp}>
@@ -86,10 +123,12 @@ const fadeInUp = {
                   sx={{ backgroundColor:'#CDAFE4'}}
                   required
                   fullWidth
-                  id="lastName"
-                  label="Last Name"
-                  name="lastName"
-                  autoComplete="family-name"
+                  id="password"
+                  label="password"
+                  name="password"
+                  type="password"
+                  autoComplete="password"
+                  inputRef={passwordRef}
                 />
               </Grid>
               <Grid item xs={12} component={motion.div} {...fadeInUp}>
@@ -101,6 +140,7 @@ const fadeInUp = {
                   label="Email Address"
                   name="email"
                   autoComplete="email"
+                  inputRef={emailRef}
                 />
               </Grid>
               <Grid item xs={12} component={motion.div} {...fadeInUp}>
@@ -108,11 +148,12 @@ const fadeInUp = {
                   sx={{ backgroundColor:'#CDAFE4'}}
                   required
                   fullWidth
-                  name="password"
-                  label="Password"
-                  type="password"
-                  id="password"
-                  autoComplete="new-password"
+                  name="address"
+                  label="address"
+                  id="address"
+                  autoComplete="address"
+                  inputRef={addressRef}
+
                 />
               </Grid>
             </Grid>
@@ -122,6 +163,7 @@ const fadeInUp = {
               variant="contained"
               component={motion.div} {...fadeInUp}
               sx={{ mt: 3, mb: 2, backgroundColor:'#7F4988'}}
+              onClick={handleSubmit}  
             >
               Sign Up
             </Button>
@@ -133,7 +175,7 @@ const fadeInUp = {
               </Grid>
             </Grid>
           </Box>
-        </Box>
+        </form>
       </Container>
     </CustomContainer>
   );

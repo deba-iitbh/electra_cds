@@ -13,6 +13,7 @@ load_dotenv(dotenv_path)
 app = FastAPI(root_path="/api")
 origins = [
     "http://localhost",
+    "http://localhost:3000",
     "http://localhost:5000",
     "http://localhost:8000",
 ]

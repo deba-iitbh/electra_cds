@@ -11,6 +11,8 @@ class UserManagementActuator:
         self.hashActuator = Hash()
 
     def create_user(self, user: UserCreate, db: Session) -> bool:
+        if user.role == "ADMIN":
+            return False
         new_user = User(
             username=user.username,
             password=self.hashActuator.get_password_hash(user.password),
