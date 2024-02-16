@@ -7,6 +7,7 @@ from src.schemas.orderSchema import (
     OrderItems,
     OrderItemsShow,
 )
+from src.schemas.cartSchema import Cart
 from src.services.orderService import OrderServiceActuator
 from src.schemas.userSchema import UserRole
 from src.schemas.tokenSchema import TokenData
@@ -57,7 +58,7 @@ def handle_order_items_create(
 
 @order.post("/", status_code=status.HTTP_201_CREATED)
 def handle_order_details_create(
-    data: OrderDetails,
+    data: list[Cart],
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user),
 ):
@@ -68,7 +69,6 @@ def handle_order_details_create(
     - id:int
     - user_id:int
     - total:float
-    - payment_id:int
     - created_at:datetime
     - modified_at:datetime
 
@@ -84,6 +84,7 @@ def handle_order_details_create(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="You are not authorized to perform this action",
         )
+    print(data)
     order_management_actuator = OrderServiceActuator()
     if order_management_actuator.create_order_details(data, db):
         return {"status": "success", "msg": "New order details added successfully"}
