@@ -6,12 +6,11 @@ from src.schemas.orderSchema import (
     OrderItems,
     OrderItemsShow,
 )
-
+from src.schemas.cartSchema import Cart
 
 class OrderServiceActuator:
     def create_order_items(self, data: OrderItems, db: Session):
         new_order_items = OrderItem(
-            id=data.id,
             order_id=data.order_id,
             product_id=data.product_id,
             created_at=data.created_at,
@@ -26,12 +25,10 @@ class OrderServiceActuator:
             db.rollback()
             return False
 
-    def create_order_details(self, data: OrderDetails, db: Session):
+    def create_order_details(self, data: list[Cart], db: Session):
         new_order_details = Order(
-            id=data.id,
-            user_id=data.user_id,
+            user_id=data[0].user_id,
             total=data.total,
-            payment_id=data.payment_id,
             created_at=data.created_at,
             modified_at=data.modified_at,
         )
