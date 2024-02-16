@@ -3,17 +3,14 @@ from datetime import datetime
 
 
 class OrderDetails(BaseModel):
-    id: int
     user_id: int
     total: float
-    payment_id: int
 
     class config:
         orm_mode = True
 
 
 class OrderDetailsShow(OrderDetails):
-    id: int
     user_id: int
     total: float
     created_at: datetime
